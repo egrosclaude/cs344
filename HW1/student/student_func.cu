@@ -33,6 +33,7 @@
 
 #include "reference_calc.cpp"
 #include "utils.h"
+#include <stdio.h>
 
 __global__
 void rgba_to_greyscale(const uchar4* const rgbaImage,
@@ -51,6 +52,14 @@ void rgba_to_greyscale(const uchar4* const rgbaImage,
   //First create a mapping from the 2D block and grid locations
   //to an absolute 2D location in the image, then use that to
   //calculate a 1D offset
+    int x = blockDim.x * blockIdx.x + threadIdx.x;
+    int y = blockDim.y * blockIdx.y + threadIdx.y;
+ 
+    if((y < numRows) && (x < numCols)) {
+        int o = y * numCols + x;
+    
+        greyImage[o] =  .299f * rgbaImage[o].x + .587f * rgbaImage[o].y + .114f * rgbaImage[o].z;
+    }
 }
 
 void your_rgba_to_greyscale(const uchar4 * const h_rgbaImage, uchar4 * const d_rgbaImage,
@@ -58,12 +67,12 @@ void your_rgba_to_greyscale(const uchar4 * const h_rgbaImage, uchar4 * const d_r
 {
   //You must fill in the correct sizes for the blockSize and gridSize
   //currently only one block with one thread is being launched
-  const dim3 blockSize(1, 1, 1);  //TODO
-  const dim3 gridSize( 1, 1, 1);  //TODO
+  const dim3 blockSize(32, 32, 1);  //TODO
+  const dim3 gridSize(ceil((float) numCols / 32), ceil((float) numRows/32), 1);  //TODO
   rgba_to_greyscale<<<gridSize, blockSize>>>(d_rgbaImage, d_greyImage, numRows, numCols);
   
   cudaDeviceSynchronize(); checkCudaErrors(cudaGetLastError());
-
+  
   /****************************************************************************
   * You can use the code below to help with debugging, but make sure to       *
   * comment it out again before submitting your assignment for grading,       *
@@ -90,3 +99,5 @@ void your_rgba_to_greyscale(const uchar4 * const h_rgbaImage, uchar4 * const d_r
   delete [] h_greyImageGPU;
   delete [] h_greyImageRef;*/
 }
+
+
